@@ -3,6 +3,8 @@
 
 This project is consists of a very basic chat app, where you can create accounts find other users on the main page and start chatting with them.
 
+[Live Preview](https://chat.happyoctopus.net/)
+
 Features:
 * Register
 * Login
