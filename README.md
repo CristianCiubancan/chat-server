@@ -43,7 +43,12 @@ To run this project you will need to do the following:
   ```sh
   npm install --global yarn
   ```
-
+* redis
+  Install redis for [Windows](https://github.com/microsoftarchive/redis/releases/tag/win-3.0.504) or for [others](https://redis.io/download)
+* PostgreSQL
+  Install [PostgreSQL](https://www.postgresql.org/download/)
+  
+  
 ### Installation
 
 1. Clone the repo
