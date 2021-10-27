@@ -47,7 +47,7 @@ export class MessageResolver {
   @Subscription(() => Message, {
     topics: "NEWMESSAGE",
     filter: async ({ payload, args, context }) => {
-      if (payload.chatId === args.chatId && context.userId) {
+      if (payload.chatId === args.chatId && context.req.session.userId) {
         return true;
       } else {
         return false;

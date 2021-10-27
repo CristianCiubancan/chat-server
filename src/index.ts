@@ -27,12 +27,13 @@ import { Reader } from "./enitities/Reader";
 import { UserResolver } from "./resolvers/user";
 import { ChatResolver } from "./resolvers/chat";
 import { MessageResolver } from "./resolvers/message";
+import { RedisPubSub } from "graphql-redis-subscriptions";
 
 const main = async () => {
   const conn = await createConnection({
     type: "postgres",
     url: process.env.DATABASE_URL,
-    logging: true,
+    logging: false,
     ssl: __prod__ ? { rejectUnauthorized: false } : false,
     synchronize: true,
     migrations: [path.join(__dirname, "./migrations/*")],
@@ -41,17 +42,16 @@ const main = async () => {
 
   await conn.runMigrations();
 
-  // const pubSub = new RedisPubSub({
-  //   connection: process.env.REDIS_URL as any,
-  // });
+  const pubSub = new RedisPubSub({
+    connection: process.env.REDIS_URL as any,
+  });
 
   const schema = await buildSchema({
     resolvers: [UserResolver, ChatResolver, MessageResolver],
-    // pubSub,
+    pubSub,
   });
 
   const app = express();
-
   const RedisStore = connectRedis(session);
 
   const redisClient = redis;
@@ -60,7 +60,7 @@ const main = async () => {
 
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN,
+      origin: process.env.CORS_ORIGIN, //asa obijnuia sa fie
       credentials: true,
     })
   );
@@ -78,7 +78,7 @@ const main = async () => {
       httpOnly: true,
       sameSite: "lax",
       secure: __prod__, //cookie only works in https
-      domain: __prod__ ? ".happyoctopus.net" : undefined,
+      domain: __prod__ ? ".happyoctopus.net" : undefined, //de scos secure false si de folosit ce e comentat
       maxAge: 1000 * 60 * 60 * 24 * 365 * 10, //10 years
     },
   } as any);
@@ -125,13 +125,13 @@ const main = async () => {
             };
             const res = {} as any as express.Response;
             sessionMiddleware(req, res, (_: any) => {
-              const userId = req.session && req.session.userId;
-              return resolve({ userId });
+              return resolve({ req, res });
             });
           });
-          const { userId } = (await promise) as any;
+          const { req, res } = (await promise) as any;
           return {
-            userId,
+            req,
+            res,
             redis,
             usersLoader: createUsersLoader(),
             chatsLoader: createChatsLoader(),

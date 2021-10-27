@@ -22,6 +22,7 @@ import { ChatMembers } from "../enitities/ChatMembers";
 import { UserInputError } from "apollo-server-express";
 import { isAuth } from "../middleware/isAuth";
 import { isMember } from "../utils/isMember";
+import { getConnection } from "typeorm";
 // import { getConnection } from "typeorm";
 
 @InputType()
@@ -71,15 +72,25 @@ export class ChatResolver {
   }
 
   @Query(() => [User])
-  async getUsers(): Promise<User[]> {
-    const users = await User.find();
+  async getUsers(@Ctx() { req }: MyContext): Promise<User[]> {
+    const users = await getConnection().query(
+      `
+        select * from "user" ${
+          req.session.userId ? `where id <> ${req.session.userId}` : ""
+        };
+      `
+    );
+
     return users;
   }
 
   @Subscription(() => Chat, {
     topics: "NEWMESSAGE",
     filter: async ({ payload, context }) => {
-      if (context.userId && (await isMember(context.userId, payload.chatId))) {
+      if (
+        context.req.session.userId &&
+        (await isMember(context.req.session.userId, payload.chatId))
+      ) {
         return true;
       } else {
         return false;
@@ -101,9 +112,9 @@ export class ChatResolver {
     topics: "NEWREADMESSAGE",
     filter: async ({ payload, context }) => {
       if (
-        context.userId &&
-        context.userId !== payload.senderId &&
-        (await isMember(context.userId, payload.chatId))
+        context.req.session.userId &&
+        context.req.session.userId !== payload.senderId &&
+        (await isMember(context.req.session.userId, payload.chatId))
       ) {
         return true;
       } else {
@@ -138,23 +149,21 @@ export class ChatResolver {
   @Query(() => [Chat])
   @UseMiddleware(isAuth)
   async getUserChats(@Ctx() { req }: MyContext): Promise<Chat[]> {
-    const chatMembers = await ChatMembers.find({
-      where: {
-        memberId: req.session.userId,
-      },
+    const userChats = await getConnection().query(
+      `
+      SELECT m."createdAt", m."chatId" FROM MESSAGE m WHERE m."id" in ( SELECT LAST_MESSAGE FROM ( SELECT "chatId", MAX("id") LAST_MESSAGE FROM MESSAGE WHERE "chatId" in (select "chatId" from chat_members where "memberId"=${req.session.userId}) GROUP BY "chatId" ) LM );
+      `
+    );
+    userChats.sort((a: any, b: any) => {
+      return b.createdAt - a.createdAt;
     });
-    const cm = chatMembers.map((member) => {
-      return { id: member.chatId };
-    });
-    if (cm.length > 0) {
-      const chats = await Chat.find({
-        where: cm,
-      });
 
-      return chats;
-    } else {
-      return [];
-    }
+    const sortedChats = userChats.map((chat: any) => {
+      return {
+        id: chat.chatId,
+      } as Chat;
+    });
+    return sortedChats ? sortedChats : [];
   }
 
   @Query(() => [Chat])

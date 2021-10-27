@@ -23,8 +23,6 @@ import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { getConnection } from "typeorm";
 import { v4 } from "uuid";
 import { FileUpload, GraphQLUpload } from "graphql-upload";
-// import { createWriteStream, mkdirSync } from "fs";
-// import { emptyDir } from "fs-extra";
 import { S3 } from "aws-sdk";
 import stream2buffer from "../utils/stream2buffer";
 import groupBy from "../utils/groupArrOfObjByValueOrKey";
@@ -43,14 +41,6 @@ class FieldError {
   @Field()
   message: string;
 }
-
-// @ObjectType()
-// class Notification {
-//   @Field()
-//   messageId: number;
-//   @Field()
-//   chatId: number;
-// }
 
 class DBNotification {
   messageId: number;
@@ -99,9 +89,9 @@ export class UserResolver {
     filter: async ({ payload, context }) => {
       if (payload.add === true) {
         if (
-          context.userId &&
-          (await isMember(context.userId, payload.chatId)) &&
-          payload.senderId !== context.userId
+          context.req.session.userId &&
+          (await isMember(context.req.session.userId, payload.chatId)) &&
+          payload.senderId !== context.req.session.userId
         ) {
           return true;
         } else {
@@ -109,9 +99,9 @@ export class UserResolver {
         }
       } else {
         if (
-          context.userId &&
-          (await isMember(context.userId, payload.chatId)) &&
-          payload.senderId === context.userId
+          context.req.session.userId &&
+          (await isMember(context.req.session.userId, payload.chatId)) &&
+          payload.senderId === context.req.session.userId
         ) {
           return true;
         } else {
@@ -377,7 +367,6 @@ export class UserResolver {
     }
     //store userid session this will set a cookie on the user to keep them logged in
     req.session.userId = user.id;
-
     return { user };
   }
   @Mutation(() => UserResponse)
@@ -415,7 +404,6 @@ export class UserResolver {
     }
 
     req.session.userId = user.id;
-
     return {
       user,
     };
