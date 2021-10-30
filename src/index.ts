@@ -110,7 +110,7 @@ const main = async () => {
   });
 
   const server = app.listen(parseInt(process.env.PORT), () => {
-    const wsServer = new ws.Server({
+    const wsServer = new ws.WebSocketServer({
       server,
       path: "/graphql",
     });
@@ -140,6 +140,9 @@ const main = async () => {
             lastMessageLoader: createLastMessageLoader(),
           };
         },
+        // onConnect: (ctx) => {
+        //   console.log(ctx);
+        // },
         // onConnect: (ctx) => {
         //   console.log("Connect", ctx);
         // },

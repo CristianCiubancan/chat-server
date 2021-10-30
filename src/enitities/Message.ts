@@ -13,6 +13,14 @@ import { Chat } from "./Chat";
 import { Reader } from "./Reader";
 
 @ObjectType()
+export class ReadersInfo {
+  @Field()
+  id: number;
+  @Field(() => [Reader])
+  readers: Reader[];
+}
+
+@ObjectType()
 @Entity()
 export class Message extends BaseEntity {
   @Field(() => ID)
@@ -36,6 +44,9 @@ export class Message extends BaseEntity {
 
   @OneToMany(() => Reader, (reader) => reader.reader)
   readers: Reader[];
+
+  @Field()
+  readersInfo: ReadersInfo;
 
   @Field(() => String)
   @CreateDateColumn()

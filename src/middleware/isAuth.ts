@@ -6,7 +6,7 @@ export const isAuth: MiddlewareFn<MyContext> = async (
   next
 ) => {
   if (!req.session.userId) {
-    throw new Error("not authenticated");
+    throw new Error("not authenticated from middleware");
   }
   return next();
 };

@@ -16,7 +16,7 @@ import {
   Subscription,
   UseMiddleware,
 } from "type-graphql";
-import { Message } from "../enitities/Message";
+import { Message, ReadersInfo } from "../enitities/Message";
 import { MyContext } from "../types/MyContext";
 import { Reader } from "../enitities/Reader";
 import { getConnection } from "typeorm";
@@ -42,6 +42,17 @@ export class MessageResolver {
   @FieldResolver(() => [Reader])
   async readers(@Root() message: Message, @Ctx() { readerLoader }: MyContext) {
     return await readerLoader.load(message.id);
+  }
+
+  @FieldResolver(() => ReadersInfo)
+  async readersInfo(
+    @Root() message: Message,
+    @Ctx() { readerLoader }: MyContext
+  ) {
+    return {
+      id: message.id,
+      readers: await readerLoader.load(message.id),
+    };
   }
 
   @Subscription(() => Message, {
@@ -106,6 +117,13 @@ export class MessageResolver {
       senderId: req.session.userId,
     }).save();
 
+    // const existingReader = await Reader.findOne({
+    //   where: { messageId: message.id, userId: req.session.userId },
+    // });
+    // if (existingReader) {
+    //   return message;
+    // }
+
     await Reader.create({
       messageId: message.id,
       userId: req.session.userId,
@@ -126,6 +144,14 @@ export class MessageResolver {
     @Arg("messageId", () => Int) messageId: number,
     @PubSub() pubSub: PubSubEngine
   ): Promise<Boolean> {
+    const existingReader = await Reader.findOne({
+      where: { messageId: messageId, userId: req.session.userId },
+    });
+
+    if (existingReader) {
+      return true;
+    }
+
     await Reader.create({
       messageId: messageId,
       userId: req.session.userId,
