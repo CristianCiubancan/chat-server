@@ -53,7 +53,7 @@ To run this project you will need to do the following:
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/CristianCiubancan/reddit-server
+   git clone https://github.com/CristianCiubancan/chat-server
    ```
 2. Install packages
    ```sh
